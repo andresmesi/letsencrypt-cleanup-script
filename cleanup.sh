@@ -8,7 +8,7 @@ CSR_DIR="${BASE_DIR}/csr"
 KEYS_DIR="${BASE_DIR}/keys"
 BACKUP_FILE="/etc/letsencrypt.tar.gz"
 LOCKFILE="/var/run/letsencrypt_cleanup.lock"
-LOGFILE="/var/log/letsencrypt_cleanup.log"
+LOGFILE="${BASE_DIR}/letsencrypt_cleanup.log"
 
 EXECUTE=false
 RECOVER=false
@@ -61,8 +61,7 @@ ALL_ACTIVE_DOMAINS=$(echo -e "${ACTIVE_DOMAINS}\n${RENEWAL_DOMAINS}" | sort | un
 DAYS=90
 echo "Analizando /archive, /live y /renewal para dominios con certificados mayores a ${DAYS} días..."
 for DOMAIN in $(ls -1 ${ARCHIVE_DIR}); do
-    LAST_MODIFIED=$(find "${ARCHIVE_DIR}/${DOMAIN}" -type f -printf '%T@
-' | sort -n | tail -1)
+    LAST_MODIFIED=$(find "${ARCHIVE_DIR}/${DOMAIN}" -type f -printf '%T@\n' | sort -n | tail -1 | cut -d '.' -f 1)
     CURRENT_TIME=$(date +%s)
     AGE=$(( (CURRENT_TIME - LAST_MODIFIED) / 86400 ))
 
