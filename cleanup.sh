@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# Directorio base de Let's Encrypt
 BASE_DIR="/etc/letsencrypt"
 LIVE_DIR="${BASE_DIR}/live"
 RENEWAL_DIR="${BASE_DIR}/renewal"
@@ -49,7 +50,28 @@ if [ "$EXECUTE" = true ]; then
     echo "Backup creado."
 fi
 
-echo "Iniciando análisis de limpieza de Let's Encrypt..."
+echo "Iniciando limpieza de Let's Encrypt..."
+
+# Limpiar certificados duplicados con sufijos (-0001, -0002, etc.)
+echo "Buscando certificados con sufijos como '-0001', '-0002', etc."
+for CERT_DIR in $(ls -1 ${LIVE_DIR} | grep -E '\-[0-9]+$'); do
+    DOMAIN=$(echo $CERT_DIR | sed -E 's/\-[0-9]+$//')
+
+    # Verificar si el dominio base existe en /live
+    if [ -d "${LIVE_DIR}/$DOMAIN" ]; then
+        echo "Eliminando certificado duplicado con sufijo: $CERT_DIR"
+
+        # Eliminar los directorios asociados
+        if [ "$EXECUTE" = true ]; then
+            rm -rf "${LIVE_DIR}/${CERT_DIR}"
+            rm -rf "${ARCHIVE_DIR}/${CERT_DIR}"
+            rm -f "${RENEWAL_DIR}/${CERT_DIR}.conf"
+        fi
+        echo "Certificado ${CERT_DIR} eliminado."
+    else
+        echo "Certificado base para $CERT_DIR no encontrado. Conservando duplicado."
+    fi
+done
 
 # Obtener dominios activos desde /live y /renewal
 ACTIVE_DOMAINS=$(ls -1 ${LIVE_DIR} | grep -v "README")
@@ -82,6 +104,7 @@ find "$CSR_DIR" -type f -mtime +$DAYS | while read FILE; do
     if [ "$EXECUTE" = true ]; then
         rm -f "$FILE"
     fi
+
 done
 
 find "$KEYS_DIR" -type f -mtime +$DAYS | while read FILE; do
@@ -89,6 +112,7 @@ find "$KEYS_DIR" -type f -mtime +$DAYS | while read FILE; do
     if [ "$EXECUTE" = true ]; then
         rm -f "$FILE"
     fi
+
 done
 
 if [ "$EXECUTE" = true ]; then
